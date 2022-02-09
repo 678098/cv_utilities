@@ -1,5 +1,6 @@
 import glob
 import random
+from typing import List
 
 import cv2
 import numpy as np
@@ -16,6 +17,8 @@ class BackgroundProvider:
 
         self._image_paths = [path for path in paths if self.is_image_path(path)]
         self._grayscale = grayscale
+
+        assert len(self._image_paths) > 0
 
     @staticmethod
     def is_image_path(path: str) -> bool:
@@ -35,21 +38,27 @@ class BackgroundProvider:
             'Max retries reached while trying to load image, probably some image files are corrupted')
 
     def get_random_crop(self, width: int, height: int) -> np.ndarray:
+        return self.get_random_crops(width, height, 1)[0]
+
+    def get_random_crops(self, width: int, height: int, num: int) -> List[np.ndarray]:
         image = self.get_random_image()
         image_h = image.shape[0]
         image_w = image.shape[1]
 
-        min_crop_size = 10
-        x1 = random.randint(0, image_w - min_crop_size)
-        x2 = x1 + min_crop_size + random.randint(0, image_w - x1 - min_crop_size)
-        y1 = random.randint(0, image_h - min_crop_size)
-        y2 = y1 + min_crop_size + random.randint(0, image_h - y1 - min_crop_size)
+        res = []
+        for i in range(num):
+            min_crop_size = 10
+            x1 = random.randint(0, image_w - min_crop_size)
+            x2 = x1 + min_crop_size + random.randint(0, image_w - x1 - min_crop_size)
+            y1 = random.randint(0, image_h - min_crop_size)
+            y2 = y1 + min_crop_size + random.randint(0, image_h - y1 - min_crop_size)
 
-        crop = image[y1:y2, x1:x2]
+            crop = image[y1:y2, x1:x2]
 
-        inter = random.choice([cv2.INTER_LINEAR, cv2.INTER_CUBIC, cv2.INTER_AREA, cv2.INTER_LANCZOS4, cv2.INTER_BITS])
-        resized = cv2.resize(crop, (width, height), interpolation=inter)
-        return resized
+            inter = random.choice([cv2.INTER_LINEAR, cv2.INTER_CUBIC, cv2.INTER_AREA, cv2.INTER_LANCZOS4, cv2.INTER_BITS])
+            resized = cv2.resize(crop, (width, height), interpolation=inter)
+            res.append(resized)
+        return res
 
 
 if __name__ == "__main__":
