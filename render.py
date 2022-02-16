@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import cv2
 import numpy as np
@@ -42,12 +42,34 @@ def collage(images: List[np.ndarray], margin_pix: int = 5) -> np.ndarray:
     return clg
 
 
+def draw(background: np.ndarray, image: np.ndarray, dst_corners: List[Tuple[int, int]]):
+    h = image.shape[0]
+    w = image.shape[1]
+
+    pts_from = [(0, 0), (w - 1, 0), (w - 1, h - 1), (0, h - 1)]
+
+    M, _ = cv2.findHomography(np.array(pts_from), np.array(dst_corners), 0)
+
+    transformed = cv2.warpPerspective(image, M, (background.shape[1], background.shape[0]))
+    transformed_mask = cv2.warpPerspective(np.ones_like(image), M, (background.shape[1], background.shape[0]))
+
+    res = background * (1 - transformed_mask) + transformed * transformed_mask
+    return res
+
+
 if __name__ == "__main__":
-    import glob
-    import random
+    # import glob
+    # import random
+    #
+    # fpaths = glob.glob('/media/mes/Speedy/OCR/gen/*.png')[:44]
+    # images = [cv2.imread(path, random.choice([cv2.IMREAD_GRAYSCALE, cv2.IMREAD_COLOR])) for path in fpaths]
+    #
+    # clg = collage(images, margin_pix=10)
+    # cv2.imwrite('res.png', clg)
 
-    fpaths = glob.glob('/media/mes/Speedy/OCR/gen/*.png')[:44]
-    images = [cv2.imread(path, random.choice([cv2.IMREAD_GRAYSCALE, cv2.IMREAD_COLOR])) for path in fpaths]
+    image = cv2.imread('/home/mes/Archive/220210/lel.png')
+    bg = cv2.imread('/home/mes/Archive/220210/bingo.png')
 
-    clg = collage(images, margin_pix=10)
-    cv2.imwrite('res.png', clg)
+    render = draw(bg, image, [(10, 10), (100, 10), (100, 100), (10, 100)])
+    cv2.imwrite('/home/mes/Archive/220210/res.png', render)
+
